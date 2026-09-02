@@ -96,6 +96,8 @@ configurations {
 }
 
 dependencies {
+    implementation files("libs/FantasticWings-v21.1.2-1.21.1-NeoForge.jar")
+    implementation files("libs/PuzzlesLib-v21.1.52-1.21.1-NeoForge.jar")
     // Specify the version of Minecraft to use.
     // Depending on the plugin applied there are several options. We will assume you applied the userdev plugin as shown above.
     // The group for userdev is net.neoforged, the module name is neoforge, and the version is the same as the neoforge version.
@@ -142,6 +144,8 @@ tasks.withType(ProcessResources).configureEach {
             mod_name               : mod_name,
             mod_license            : mod_license,
             mod_version            : mod_version,
+            mod_authors            : mod_authors,
+            mod_description        : mod_description,
     ]
     inputs.properties replaceProperties
 

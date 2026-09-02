@@ -1,0 +1,17 @@
+{
+  "type": "demonicascension:abyss",
+  "generator": {
+    "type": "minecraft:flat",
+    "settings": {
+      "biome": "demonicascension:abyss",
+      "lakes": false,
+      "features": false,
+      "layers": [
+        {
+          "block": "minecraft:air",
+          "height": 1
+        }
+      ]
+    }
+  }
+}
