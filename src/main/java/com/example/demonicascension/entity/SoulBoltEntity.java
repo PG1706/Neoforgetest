@@ -1,5 +1,7 @@
 package com.example.demonicascension.entity;
 
+import com.example.demonicascension.config.ModConfigs;
+
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
@@ -137,9 +139,9 @@ public class SoulBoltEntity extends Projectile {
         target.hurt(source, this.damage);
         target.setRemainingFireTicks(100); // 5 seconds
 
-        // Half the damage returns to the caster.
+        // A fraction of the damage returns to the caster.
         if (this.getOwner() instanceof LivingEntity owner) {
-            owner.heal(this.damage * 0.5F);
+            owner.heal(this.damage * ModConfigs.BOLT_LIFESTEAL.get().floatValue());
         }
 
         if (this.explosive) {

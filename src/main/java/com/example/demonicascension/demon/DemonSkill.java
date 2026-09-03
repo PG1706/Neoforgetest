@@ -1,5 +1,7 @@
 package com.example.demonicascension.demon;
 
+import com.example.demonicascension.config.ModConfigs;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -52,17 +54,17 @@ public enum DemonSkill {
     private final String id;
     private final String displayName;
     private final String description;
-    private final int cost;
+    private final int baseCost;
     private final int gridX;
     private final int gridY;
     private final List<DemonSkill> prerequisites;
 
-    DemonSkill(String id, String displayName, String description, int cost,
+    DemonSkill(String id, String displayName, String description, int baseCost,
                int gridX, int gridY, DemonSkill... prerequisites) {
         this.id = id;
         this.displayName = displayName;
         this.description = description;
-        this.cost = cost;
+        this.baseCost = baseCost;
         this.gridX = gridX;
         this.gridY = gridY;
         this.prerequisites = List.of(prerequisites);
@@ -80,8 +82,14 @@ public enum DemonSkill {
         return description;
     }
 
+    /** The cost as originally balanced. {@link #getCost()} is what should actually be charged. */
+    public int getBaseCost() {
+        return baseCost;
+    }
+
+    /** Current cost to unlock this skill, honouring any config override. */
     public int getCost() {
-        return cost;
+        return ModConfigs.skillCost(this);
     }
 
     public int getGridX() {
@@ -107,7 +115,7 @@ public enum DemonSkill {
 
     public boolean canUnlock(DemonData data) {
         return !data.hasSkill(this)
-                && data.getSkillPoints() >= cost
+                && data.getSkillPoints() >= getCost()
                 && prerequisitesMet(data);
     }
 

@@ -90,7 +90,7 @@ public class SkillTreeScreen extends Screen {
         String pts = "Skill Points: " + data.getSkillPoints();
         g.drawCenteredString(this.font, pts, this.width / 2, this.originY - 32, 0xFF6BD4E0);
 
-        String souls = "Souls: " + data.getSouls() + " / " + DemonData.SOULS_PER_POINT;
+        String souls = "Souls: " + data.getSouls() + " / " + DemonData.soulsPerPoint();
         g.drawCenteredString(this.font, souls, this.width / 2, this.originY - 20, 0xFF7A7A88);
 
         // --- Connecting lines, drawn first so nodes sit on top ---

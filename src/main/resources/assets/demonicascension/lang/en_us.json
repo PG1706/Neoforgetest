@@ -1,11 +1,13 @@
 {
   "item.demonicascension.abyssal_soul": "Abyssal Soul",
+  "item.demonicascension.abyssal_sword": "Abyssal Sword",
   "itemGroup.demonicascension": "Demonic Ascension",
   "key.categories.demonicascension": "Demonic Ascension",
   "key.demonicascension.bolt": "Soul Bolt",
   "key.demonicascension.dash": "Abyssal Dash",
   "key.demonicascension.skill_tree": "Open Skill Tree",
   "key.demonicascension.rift": "Open Abyssal Rift",
+  "key.demonicascension.transform": "Transform",
   "entity.demonicascension.rift": "Abyssal Rift",
   "entity.demonicascension.soul_bolt": "Soul Bolt"
 }

@@ -32,6 +32,15 @@ public class ModEntities {
                     .fireImmune()
                     .build("rift"));
 
+    public static final Supplier<EntityType<AltarSwordEntity>> ALTAR_SWORD =
+            ENTITIES.register("altar_sword", () -> EntityType.Builder
+                    .<AltarSwordEntity>of(AltarSwordEntity::new, MobCategory.MISC)
+                    .sized(0.6F, 3.4F)
+                    .clientTrackingRange(8)
+                    .updateInterval(20)
+                    .fireImmune()
+                    .build("altar_sword"));
+
     public static void register(IEventBus modEventBus) {
         ENTITIES.register(modEventBus);
     }

@@ -5,8 +5,8 @@ uses it to ascend into a demonic form, harvests souls from kills to earn skill p
 and spends those on a skill tree of passives and active abilities. The capstone skill
 tears open a rift into a private abyss dimension.
 
-Version 0.1.0 is complete and running on a live multiplayer server inside a large
-modpack without errors. Work in progress is version 0.2.0 (see **Roadmap** below).
+Version 0.1.0 is complete and ran on a live multiplayer server inside a large modpack
+without errors. Version 0.5.0 (see **Roadmap** below) is now complete.
 
 ---
 
@@ -60,7 +60,7 @@ com.example.demonicascension
 ├── compat/                    FantasticWings integration
 ├── config/                    ModConfigs (currently unused — see Roadmap)
 ├── demon/                     core logic: data, skills, form, abilities
-├── dimension/                 abyss dimension key + platform generation
+├── dimension/                 abyss dimension key + structure-template placement
 ├── entity/                    SoulBoltEntity, RiftEntity, ModEntities
 ├── event/                     event subscribers (sync, soul harvest, commands)
 ├── item/                      AbyssalSoulItem, ModItems
@@ -95,7 +95,7 @@ into view of another), artifact use, skill unlock, and soul gain.
 | `AbilityHandler` | All active ability logic, cooldown checks, and denial feedback. |
 | `SkillUnlockHandler` | Shared server-side unlock validation, used by both the GUI and the command. |
 | `AscensionState` | `SavedData` on the overworld. Records which single player has claimed the abyss. |
-| `AbyssManager` | Per-player platform coordinates and platform generation. |
+| `AbyssManager` | Per-player platform coordinates; loads and places the hand-built throne room structure template. |
 | `ModNetworking` | Payload registration and the sync helpers. |
 
 ---
@@ -119,6 +119,9 @@ into view of another), artifact use, skill unlock, and soul gain.
 - **Textures** are generated procedurally with Pillow scripts rather than hand-drawn.
   Palette: near-black blackstone shell, soul-fire cyan (`#84ECFF` core, `#28A8D2` mid),
   ember red (`#742220`) as an accent. Keep new assets consistent with this.
+- **Large builds** (the throne room) are hand-built in-game and shipped as structure
+  templates rather than generated procedurally — see **Structure templates** under
+  Roadmap.
 
 ---
 
@@ -184,53 +187,73 @@ These have all bitten before. Check them first when something breaks.
    `NO_LAYERING`. `ITEM_ENTITY_TARGET` re-composites with depth and re-occludes the lines.
 5. **Dimension JSON is read at world creation.** Changes require a brand new world;
    existing saves cache the old generator.
-6. **`AbyssManager.ensurePlatform`** skips generation if the centre block is non-air.
-   Any change to platform structure will not apply to players who already have one.
+6. **`AbyssManager.ensureHall`** skips placement if the entry tile is non-air. Any
+   change to the throne room's `.nbt` structure template will not apply to players who
+   already have a hall — regenerate the world/platform to test changes.
 7. **Textures render magenta/black** when the path is wrong — that is a missing file,
    not a crash.
 8. **`Enemy` is in `net.minecraft.world.entity.monster`**, not `net.minecraft.world.entity`.
 
 ---
 
-## Roadmap — version 0.2.0
+## Roadmap — version 0.5.0
 
 Ordered so each stage builds and tests independently. Config comes first because it
 touches nearly every file; doing it later means retrofitting everything twice.
 
-1. **Aura rework.** `DemonParticleHandler` only reads `mc.player`, so the soul-fire
-   aura is invisible on other players. Loop over all players in the level and check
-   each one's synced `DemonData`. At the same time, suppress particles near eye level
-   for the local player (or entirely in first person) — they currently obscure vision.
-2. **Config system.** `config/ModConfigs.java` exists but is unused. Expose every
-   tunable: soul values, souls-per-point, all skill stats, all cooldowns, ability
-   damage and ranges, skill costs, platform spacing. Note `DemonSkill` holds costs as
-   enum constants, which cannot read config at class-load time — costs need to move to
-   a lookup.
-3. **Ascended passive boost.** A minor permanent buff for ascended players even when
-   untransformed. `DemonFormHandler.removeForm` currently strips everything; it should
-   apply a small "ascended" set instead. Keep it modest so transforming still matters.
-4. **Glowing animated eyes.** A render layer on the player model, like the horns, but
-   a flat emissive overlay on the face rather than protruding geometry. Animated via a
-   frame strip like the rift, but subtler — a slow pulse or flicker, not writhing.
-5. **The ritual.** Multiblock pattern detection to craft the Abyssal Soul. This is
-   currently the only way to obtain it (it is creative-tab only right now), so it
-   unblocks new players entirely. Note the one-host-per-world rule: decide whether the
-   ritual fails for a second player, or succeeds and produces a soul that rejects them.
-6. **Throne room shell.** Rewrite `AbyssManager` with box/wall/floor helpers, then
-   build a large hall in plain blackstone. Confirm the scale before adding detail.
-7. **Pillars and palette.** Pillar rows with bases, shafts, capitals. Varied blocks so
-   surfaces read as built rather than poured.
-8. **Soul flame details.** Lanterns, soul fire, campfires. Also the actual lighting —
-   an unlit interior is just black.
-9. **Dais and throne.** Raised platform, steps, throne. Decide whether it is functional.
-10. **Altar and sword.** A lategame weapon found on an altar in the throne room.
-    Well above netherite (15–20 base damage), soul-fire themed effects, custom texture
-    in the established palette.
-11. **Side rooms.** Two or three chambers off the main hall, purpose TBD.
-12. **Arrival and migration.** Where players land, and handling players who already
-    have the old 0.1.0 platform (see pitfall 6).
+1. **Aura rework.** *Done.* `DemonParticleHandler` loops over all players in the level
+   and checks each one's synced `DemonData`, so the soul-fire aura is visible on other
+   players. Particles are suppressed near eye level for the local player.
+2. **Config system.** *Done.* `config/ModConfigs.java` exposes every tunable: soul
+   values, souls-per-point, all skill stats, all cooldowns, ability damage and ranges,
+   skill costs, platform spacing.
+3. **Ascended passive boost.** *Done.* A modest permanent buff for ascended players
+   even when untransformed.
+4. **Glowing animated eyes.** *Done.* A render layer on the player model, animated via
+   a frame strip.
+5. **The ritual.** *Done.* Multiblock altar detection crafts the Abyssal Soul.
+6. **Throne room shell.** *Done — differently than planned.* Rather than rewriting
+   `AbyssManager` with procedural box/wall/floor helpers, the throne room is hand-built
+   in-game and captured with a structure block, then placed at runtime via
+   `StructureTemplateManager`. See **Structure templates** below.
+7. **Pillars and palette.** *Done*, as part of the hand-built structure — no longer a
+   separate procedural stage.
+8. **Soul flame details.** *Done*, as part of the hand-built structure.
+9. **Dais and throne.** *Done*, as part of the hand-built structure.
+10. **Altar and sword.** *Done.* The Abyssal Sword: 18 base damage, lifesteal + Wither
+    on hit, a texture based on a reference "Tainted Phoenix Blade" design (extracted
+    from the source art and cleaned up, not hand-drawn from scratch), and a bespoke 3D
+    floating model (`AltarSwordModel`, `AltarSwordRenderer`, `AltarSwordEntity`) that
+    hovers point-down over the altar and is claimed by right-clicking it.
+11. **Side rooms.** *Done*, as part of the hand-built structure.
+12. **Arrival and migration.** *Done.* Where players land, and handling players
+    who already have the old 0.1.0 platform (see pitfall 6) — or the old
+    *procedurally-generated* 0.2.0 throne room, from before the structure-block switch.
 
 Open design questions are deliberately deferred to the stage that needs them.
+
+### Structure templates
+
+The throne room shell — palette, lighting, dais, altar, and side rooms — is a single
+hand-built structure rather than procedurally generated. It was built in-game, scanned
+with a structure block (the "Huge Structure Blocks" mod lifts the vanilla 32-block
+size cap), and shipped as
+`src/main/resources/data/demonicascension/structure/throneroom.nbt`. `AbyssManager`
+loads it via `level.getStructureManager()` and places it with
+`StructureTemplate.placeInWorld` at each player's deterministic platform position.
+
+- The structure's local `(0,0,0)` is wherever the structure block itself sat when it
+  was scanned — **not** necessarily the build's floor or a corner.
+- `AbyssManager`'s `SPAWN_OFFSET` and the sword marker offsets are hardcoded local
+  coordinates into that structure, derived by inspecting the scanned `.nbt` directly
+  (it's gzip-compressed NBT — a small Python script can parse it with no library, just
+  `gzip` + manual tag reading). If the structure is rescanned with different
+  proportions, these offsets need re-deriving the same way.
+- Before scanning, break any structure block left inside the build's bounding box —
+  otherwise it's captured as a literal `minecraft:structure_block` and gets placed
+  into the world along with everything else.
+- Same regeneration caveat as pitfall 6: changes to the `.nbt` don't apply to players
+  who already have a hall.
 
 ---
 

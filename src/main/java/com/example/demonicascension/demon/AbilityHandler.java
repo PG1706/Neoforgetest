@@ -1,5 +1,6 @@
 package com.example.demonicascension.demon;
 
+import com.example.demonicascension.config.ModConfigs;
 import com.example.demonicascension.entity.RiftEntity;
 import com.example.demonicascension.entity.SoulBoltEntity;
 
@@ -24,24 +25,10 @@ import java.util.List;
 
 public class AbilityHandler {
 
-    // --- Cooldowns (ticks) ---
-    private static final int DASH_COOLDOWN = 80;      // 4 seconds
-    private static final int VOIDSTEP_COOLDOWN = 140; // 7 seconds
-    private static final int BOLT_COOLDOWN = 40;      // 2 seconds
-    private static final int BARRAGE_COOLDOWN = 120;  // 6 seconds
-    private static final int RIFT_COOLDOWN = 600;     // 30 seconds
-
-    // --- Abyssal Dash tuning ---
+    // --- Abyssal Dash tuning (not config-exposed; a fixed part of the ability's feel) ---
     private static final double DASH_POWER = 3.0;
-    private static final float DASH_DAMAGE = 12.0F;
-    private static final double DASH_HIT_RADIUS = 3.0;
 
-    // --- Voidstep tuning ---
-    private static final double VOIDSTEP_RANGE = 40.0;
-    private static final float VOIDSTEP_DAMAGE = 25.0F;
-    private static final double VOIDSTEP_RADIUS = 5.0;
-
-    // --- Bolt tuning ---
+    // --- Bolt tuning (not config-exposed; a fixed part of the ability's feel) ---
     private static final double BOLT_SPEED = 1.6;
 
     /** How long the light-source entity lingers, in ticks. */
@@ -67,6 +54,20 @@ public class AbilityHandler {
 
     private static void denyNotTransformed(ServerPlayer player) {
         deny(player, "Only the demon may call upon this.");
+    }
+
+    // ==================== TRANSFORM SLOT ====================
+
+    /** Toggles the demon form for an ascended player without needing the Abyssal Soul in hand. */
+    public static void useTransformSlot(ServerPlayer player) {
+        DemonData data = player.getData(ModAttachments.DEMON_DATA);
+
+        if (!data.hasAscended()) {
+            deny(player, "You have not ascended.");
+            return;
+        }
+
+        DemonFormHandler.toggleTransform(player);
     }
 
     // ==================== DASH SLOT ====================
@@ -96,10 +97,10 @@ public class AbilityHandler {
 
         if (hasVoidstep) {
             voidstep(player);
-            data.setDashCooldown(now, VOIDSTEP_COOLDOWN);
+            data.setDashCooldown(now, ModConfigs.VOIDSTEP_COOLDOWN_TICKS.get());
         } else {
             abyssalDash(player);
-            data.setDashCooldown(now, DASH_COOLDOWN);
+            data.setDashCooldown(now, ModConfigs.DASH_COOLDOWN_TICKS.get());
         }
 
         player.setData(ModAttachments.DEMON_DATA, data);
@@ -118,13 +119,14 @@ public class AbilityHandler {
         player.invulnerableTime = 40;
 
         Vec3 end = start.add(look.scale(DASH_POWER * 4));
-        AABB sweep = new AABB(start, end).inflate(DASH_HIT_RADIUS);
+        AABB sweep = new AABB(start, end).inflate(ModConfigs.DASH_HIT_RADIUS.get());
 
         List<LivingEntity> hits = player.level().getEntitiesOfClass(
                 LivingEntity.class, sweep, e -> e != player && e.isAlive());
 
+        float dashDamage = ModConfigs.DASH_DAMAGE.get().floatValue();
         for (LivingEntity target : hits) {
-            target.hurt(player.damageSources().playerAttack(player), DASH_DAMAGE);
+            target.hurt(player.damageSources().playerAttack(player), dashDamage);
             Vec3 push = target.position().subtract(start).normalize().scale(1.8);
             target.setDeltaMovement(push.x, 0.6, push.z);
             target.hurtMarked = true;
@@ -142,7 +144,7 @@ public class AbilityHandler {
         Vec3 origin = player.position();
         Vec3 eye = player.getEyePosition();
         Vec3 look = player.getLookAngle();
-        Vec3 far = eye.add(look.scale(VOIDSTEP_RANGE));
+        Vec3 far = eye.add(look.scale(ModConfigs.VOIDSTEP_RANGE.get()));
 
         // Raycast so we land in front of a wall rather than inside it.
         BlockHitResult hit = player.level().clip(new ClipContext(
@@ -182,13 +184,14 @@ public class AbilityHandler {
 
     /** Big soul fire bloom at the destination, plus the damage. */
     private static void arrivalBurst(ServerPlayer player, Vec3 center) {
-        AABB area = new AABB(center, center).inflate(VOIDSTEP_RADIUS);
+        AABB area = new AABB(center, center).inflate(ModConfigs.VOIDSTEP_RADIUS.get());
 
         List<LivingEntity> hits = player.level().getEntitiesOfClass(
                 LivingEntity.class, area, e -> e != player && e.isAlive());
 
+        float voidstepDamage = ModConfigs.VOIDSTEP_DAMAGE.get().floatValue();
         for (LivingEntity target : hits) {
-            target.hurt(player.damageSources().magic(), VOIDSTEP_DAMAGE);
+            target.hurt(player.damageSources().magic(), voidstepDamage);
         }
 
         if (!(player.level() instanceof ServerLevel level)) {
@@ -272,10 +275,10 @@ public class AbilityHandler {
 
         if (hasBarrage) {
             fireBarrage(player);
-            data.setBolterCooldown(now, BARRAGE_COOLDOWN);
+            data.setBolterCooldown(now, ModConfigs.BARRAGE_COOLDOWN_TICKS.get());
         } else {
             fireBolt(player, 0.0);
-            data.setBolterCooldown(now, BOLT_COOLDOWN);
+            data.setBolterCooldown(now, ModConfigs.BOLT_COOLDOWN_TICKS.get());
         }
 
         player.setData(ModAttachments.DEMON_DATA, data);
@@ -285,6 +288,7 @@ public class AbilityHandler {
         Vec3 look = player.getLookAngle();
 
         SoulBoltEntity bolt = new SoulBoltEntity(player.level(), player);
+        bolt.setDamage(ModConfigs.BOLT_DAMAGE.get().floatValue());
 
         Vec3 velocity = look.scale(BOLT_SPEED);
         if (spread > 0.0) {
@@ -305,13 +309,14 @@ public class AbilityHandler {
     private static void fireBarrage(ServerPlayer player) {
         Vec3 look = player.getLookAngle();
         var rng = player.getRandom();
+        float barrageDamage = ModConfigs.BARRAGE_BOLT_DAMAGE.get().floatValue();
 
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < ModConfigs.BARRAGE_BOLT_COUNT.get(); i++) {
             SoulBoltEntity bolt = new SoulBoltEntity(player.level(), player);
 
             bolt.setExplosive(true);
             bolt.setHoming(true);
-            bolt.setDamage(20.0F);
+            bolt.setDamage(barrageDamage);
 
             Vec3 velocity = look.scale(BOLT_SPEED).add(
                     (rng.nextDouble() - 0.5) * 0.35,
@@ -355,7 +360,7 @@ public class AbilityHandler {
         rift.setYRot(player.getYRot());
         player.level().addFreshEntity(rift);
 
-        data.setRiftCooldown(now, RIFT_COOLDOWN);
+        data.setRiftCooldown(now, ModConfigs.RIFT_COOLDOWN_TICKS.get());
         player.setData(ModAttachments.DEMON_DATA, data);
 
         if (player.level() instanceof ServerLevel level) {

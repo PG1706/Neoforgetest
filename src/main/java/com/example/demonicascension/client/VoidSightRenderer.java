@@ -1,6 +1,7 @@
 package com.example.demonicascension.client;
 
 import com.example.demonicascension.DemonicAscension;
+import com.example.demonicascension.config.ModConfigs;
 import com.example.demonicascension.demon.DemonData;
 import com.example.demonicascension.demon.DemonSkill;
 import com.example.demonicascension.demon.ModAttachments;
@@ -30,7 +31,6 @@ import java.util.List;
 @EventBusSubscriber(modid = DemonicAscension.MODID, value = Dist.CLIENT)
 public class VoidSightRenderer {
 
-    private static final double RANGE = 32.0;
     private static final int RESCAN_INTERVAL = 10; // ticks
 
     // Hostiles burn red; players glow violet.
@@ -61,7 +61,7 @@ public class VoidSightRenderer {
             return;
         }
 
-        AABB search = self.getBoundingBox().inflate(RANGE);
+        AABB search = self.getBoundingBox().inflate(ModConfigs.VOID_SIGHT_RANGE.get());
 
         for (Entity entity : mc.level.getEntities(self, search)) {
             if (!(entity instanceof LivingEntity living) || !living.isAlive()) {
@@ -114,7 +114,7 @@ public class VoidSightRenderer {
 
             // Fade with distance so a crowded cave doesn't become noise.
             double distance = self.distanceTo(target);
-            float alpha = (float) Mth.clamp(1.0 - (distance / RANGE), 0.15, 0.85);
+            float alpha = (float) Mth.clamp(1.0 - (distance / ModConfigs.VOID_SIGHT_RANGE.get()), 0.15, 0.85);
 
             LevelRenderer.renderLineBox(poseStack, consumer, box,
                     colour[0], colour[1], colour[2], alpha);

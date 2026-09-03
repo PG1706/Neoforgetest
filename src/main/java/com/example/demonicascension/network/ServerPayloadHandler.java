@@ -27,6 +27,7 @@ public class ServerPayloadHandler {
                 case BOLT -> AbilityHandler.useBoltSlot(player);
                 case DASH -> AbilityHandler.useDashSlot(player);
                 case RIFT -> AbilityHandler.useRiftSlot(player);
+                case TRANSFORM -> AbilityHandler.useTransformSlot(player);
             }
         });
     }

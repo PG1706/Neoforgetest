@@ -88,7 +88,7 @@ public class DemonCommand {
         send(player, "Ascended: " + (data.hasAscended() ? "yes" : "no"), ChatFormatting.GRAY);
         send(player, "Transformed: " + (data.isTransformed() ? "yes" : "no"), ChatFormatting.GRAY);
         send(player, "Skill points: " + data.getSkillPoints(), ChatFormatting.AQUA);
-        send(player, "Souls: " + data.getSouls() + " / " + DemonData.SOULS_PER_POINT
+        send(player, "Souls: " + data.getSouls() + " / " + DemonData.soulsPerPoint()
                 + " toward next point", ChatFormatting.AQUA);
         send(player, "Skills unlocked: " + data.getUnlockedSkills().size()
                 + " / " + DemonSkill.values().length, ChatFormatting.GRAY);

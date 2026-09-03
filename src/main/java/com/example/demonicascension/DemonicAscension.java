@@ -3,6 +3,7 @@ package com.example.demonicascension;
 import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
+import com.example.demonicascension.config.ModConfigs;
 import com.example.demonicascension.item.ModItems;
 import com.example.demonicascension.demon.ModAttachments;
 import com.example.demonicascension.entity.ModEntities;
@@ -17,6 +18,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -37,6 +39,7 @@ public class DemonicAscension {
                     .icon(() -> ModItems.ABYSSAL_SOUL.get().getDefaultInstance())
                     .displayItems((parameters, output) -> {
                         output.accept(ModItems.ABYSSAL_SOUL.get());
+                        output.accept(ModItems.ABYSSAL_SWORD.get());
                     }).build());
 
     public DemonicAscension(IEventBus modEventBus, ModContainer modContainer) {
@@ -46,6 +49,9 @@ public class DemonicAscension {
         CREATIVE_MODE_TABS.register(modEventBus);
         ModAttachments.register(modEventBus);
         ModEntities.register(modEventBus);
+
+        modContainer.registerConfig(ModConfig.Type.SERVER, ModConfigs.SERVER_SPEC);
+        modContainer.registerConfig(ModConfig.Type.CLIENT, ModConfigs.CLIENT_SPEC);
     }
 
     private void commonSetup(FMLCommonSetupEvent event) {

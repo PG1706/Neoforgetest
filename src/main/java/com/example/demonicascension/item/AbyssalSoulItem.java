@@ -1,5 +1,6 @@
 package com.example.demonicascension.item;
 
+import com.example.demonicascension.config.ModConfigs;
 import com.example.demonicascension.demon.AscensionState;
 import com.example.demonicascension.demon.DemonData;
 import com.example.demonicascension.demon.DemonFormHandler;
@@ -21,9 +22,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 
 public class AbyssalSoulItem extends Item {
-
-    private static final float REJECTION_DAMAGE = 8.0F;
-    private static final int REJECTION_BURN_TICKS = 120; // 6 seconds
 
     public AbyssalSoulItem(Properties properties) {
         super(properties);
@@ -55,23 +53,21 @@ public class AbyssalSoulItem extends Item {
                 data.setAscended(true);
                 data.setTransformed(true);
                 data.addSkillPoints(1);
+                player.setData(ModAttachments.DEMON_DATA, data);
                 player.sendSystemMessage(Component
                         .literal("The abyss claims you. You have ascended.")
                         .withStyle(ChatFormatting.DARK_PURPLE));
+
+                DemonFormHandler.updateForm(player);
+                DemonFormHandler.playTransformEffects(player, true);
+                ModNetworking.syncToAll(serverPlayer);
+
+                // The soul's job is done — ascension is permanent, and the demon form
+                // is reachable from now on through the transform keybind instead.
+                stack.shrink(1);
             } else {
-                data.setTransformed(!data.isTransformed());
-                player.sendSystemMessage(Component.literal(
-                        data.isTransformed()
-                                ? "You embrace your demonic form."
-                                : "You return to mortal form."));
+                DemonFormHandler.toggleTransform(serverPlayer);
             }
-
-            player.setData(ModAttachments.DEMON_DATA, data);
-
-            DemonFormHandler.updateForm(player);
-            DemonFormHandler.playTransformEffects(player, data.isTransformed());
-
-            ModNetworking.syncToAll(serverPlayer);
         }
 
         return InteractionResultHolder.sidedSuccess(stack, level.isClientSide());
@@ -79,8 +75,8 @@ public class AbyssalSoulItem extends Item {
 
     /** The soul burns anyone who is not its chosen host. */
     private void rejectPlayer(ServerPlayer player, String ownerName) {
-        player.hurt(player.damageSources().magic(), REJECTION_DAMAGE);
-        player.setRemainingFireTicks(REJECTION_BURN_TICKS);
+        player.hurt(player.damageSources().magic(), ModConfigs.REJECTION_DAMAGE.get().floatValue());
+        player.setRemainingFireTicks(ModConfigs.REJECTION_BURN_TICKS.get());
 
         player.sendSystemMessage(Component
                 .literal("The soul recoils. It is bound to another.")

@@ -1,5 +1,6 @@
 package com.example.demonicascension.demon;
 
+import com.example.demonicascension.config.ModConfigs;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 
@@ -11,8 +12,10 @@ import java.util.Set;
 
 public class DemonData {
 
-    /** Souls needed to earn one skill point. */
-    public static final int SOULS_PER_POINT = 25;
+    /** Souls needed to earn one skill point, honouring any config override. */
+    public static int soulsPerPoint() {
+        return ModConfigs.SOULS_PER_SKILL_POINT.get();
+    }
 
     public static final Codec<DemonData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.BOOL.optionalFieldOf("transformed", false).forGetter(DemonData::isTransformed),
@@ -44,6 +47,8 @@ public class DemonData {
     private long bolterReadyAt = 0L;
     private long dashReadyAt = 0L;
     private long riftReadyAt = 0L;
+    private long swordIgniteReadyAt = 0L;
+    private long swordIgniteActiveUntil = 0L;
 
     public DemonData() {
         this(false, false, 0, 0, List.of(), Optional.empty(), List.of());
@@ -123,9 +128,10 @@ public class DemonData {
      */
     public int addSouls(int amount) {
         this.souls += amount;
-        int earned = this.souls / SOULS_PER_POINT;
+        int perPoint = soulsPerPoint();
+        int earned = this.souls / perPoint;
         if (earned > 0) {
-            this.souls %= SOULS_PER_POINT;
+            this.souls %= perPoint;
             this.skillPoints += earned;
         }
         return earned;
@@ -226,5 +232,23 @@ public class DemonData {
 
     public long getRiftRemaining(long gameTime) {
         return Math.max(0L, riftReadyAt - gameTime);
+    }
+
+    public boolean isSwordIgniteReady(long gameTime) {
+        return gameTime >= swordIgniteReadyAt;
+    }
+
+    public long getSwordIgniteRemaining(long gameTime) {
+        return Math.max(0L, swordIgniteReadyAt - gameTime);
+    }
+
+    /** Arms the ignite ability: active for {@code durationTicks}, then locked out for {@code cooldownTicks}. */
+    public void activateSwordIgnite(long gameTime, int durationTicks, int cooldownTicks) {
+        this.swordIgniteActiveUntil = gameTime + durationTicks;
+        this.swordIgniteReadyAt = gameTime + cooldownTicks;
+    }
+
+    public boolean isSwordIgniteActive(long gameTime) {
+        return gameTime < swordIgniteActiveUntil;
     }
 }

@@ -27,6 +27,7 @@ public record UseAbilityPayload(int abilityIndex) implements CustomPacketPayload
     public enum Ability {
         BOLT,
         DASH,
-        RIFT
+        RIFT,
+        TRANSFORM
     }
 }

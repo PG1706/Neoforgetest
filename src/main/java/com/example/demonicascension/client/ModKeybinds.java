@@ -35,6 +35,10 @@ public class ModKeybinds {
             "key." + DemonicAscension.MODID + ".rift",
             InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_G, CATEGORY);
 
+    public static final KeyMapping TRANSFORM_KEY = new KeyMapping(
+            "key." + DemonicAscension.MODID + ".transform",
+            InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_B, CATEGORY);
+
     @EventBusSubscriber(modid = DemonicAscension.MODID, value = Dist.CLIENT)
     public static class Registration {
         @SubscribeEvent
@@ -43,6 +47,7 @@ public class ModKeybinds {
             event.register(DASH_KEY);
             event.register(SKILL_TREE_KEY);
             event.register(RIFT_KEY);
+            event.register(TRANSFORM_KEY);
         }
     }
 
@@ -59,6 +64,10 @@ public class ModKeybinds {
         while (RIFT_KEY.consumeClick()) {
             PacketDistributor.sendToServer(
                     new UseAbilityPayload(UseAbilityPayload.Ability.RIFT.ordinal()));
+        }
+        while (TRANSFORM_KEY.consumeClick()) {
+            PacketDistributor.sendToServer(
+                    new UseAbilityPayload(UseAbilityPayload.Ability.TRANSFORM.ordinal()));
         }
         while (SKILL_TREE_KEY.consumeClick()) {
             Minecraft mc = Minecraft.getInstance();
