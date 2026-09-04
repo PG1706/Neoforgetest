@@ -14,7 +14,16 @@ import net.minecraft.resources.ResourceLocation;
 /**
  * Coordinates are relative to the player's head part (see {@link DemonHornModel}): the
  * head occupies x -4..4, y -8..0, z -4..4, so z=-4 is the face plane. Each eye is a
- * thin flat box sitting just proud of that plane — an overlay, not a horn.
+ * zero-depth box sitting a hair (0.01) proud of that plane — a true flat quad, not a horn.
+ * <p>
+ * This used to be a box with a small nonzero depth so it would render as a raised
+ * "overlay". That was the actual bug behind the sticking-out-of-the-face look: a box's
+ * UV unwrap pastes the same front texture onto its (thin but nonzero-area) side faces
+ * too, so from a side angle you'd see those side strips as an extra sliver of eye
+ * texture floating off the face. Depth = 0 makes the side faces degenerate (zero area,
+ * nothing to render), leaving only the front/back quad — no more per-view artifact.
+ * Placing that flat quad exactly coplanar with the face (z=-4.0 precisely) z-fights
+ * with the skin texture underneath, hence the tiny 0.01 offset.
  * <p>
  * A box's UV footprint is normally tied to its own physical size, which is far too
  * small here to show painted detail (a lesson learned building the flame halo) — so
@@ -29,7 +38,7 @@ public class DemonEyesModel {
 
     private static final float WIDTH = 2.6F;
     private static final float HEIGHT = 1.4F;
-    private static final float DEPTH = 1.0F; // must be a whole number — see addEye
+    private static final float DEPTH = 0.0F; // flat plane — see the class doc
 
     public static LayerDefinition createLayer() {
         MeshDefinition mesh = new MeshDefinition();
@@ -53,6 +62,6 @@ public class DemonEyesModel {
                 .addBox(-WIDTH / 2.0F, -HEIGHT / 2.0F, -DEPTH / 2.0F, WIDTH, HEIGHT, DEPTH,
                         CubeDeformation.NONE, WIDTH, HEIGHT);
 
-        root.addOrReplaceChild(name, cube, PartPose.offset(x, -3.5F, -4.0F));
+        root.addOrReplaceChild(name, cube, PartPose.offset(x, -3.5F, -4.01F));
     }
 }
