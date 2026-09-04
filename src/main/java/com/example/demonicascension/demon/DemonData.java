@@ -49,6 +49,9 @@ public class DemonData {
     private long riftReadyAt = 0L;
     private long swordIgniteReadyAt = 0L;
     private long swordIgniteActiveUntil = 0L;
+    private long slashReadyAt = 0L;
+    private long eclipseReadyAt = 0L;
+    private long eclipseActiveUntil = 0L;
 
     public DemonData() {
         this(false, false, 0, 0, List.of(), Optional.empty(), List.of());
@@ -250,5 +253,32 @@ public class DemonData {
 
     public boolean isSwordIgniteActive(long gameTime) {
         return gameTime < swordIgniteActiveUntil;
+    }
+
+    public boolean isSlashReady(long gameTime) {
+        return gameTime >= slashReadyAt;
+    }
+
+    public void setSlashCooldown(long gameTime, int ticks) {
+        this.slashReadyAt = gameTime + ticks;
+    }
+
+    public boolean isEclipseReady(long gameTime) {
+        return gameTime >= eclipseReadyAt;
+    }
+
+    public long getEclipseRemaining(long gameTime) {
+        return Math.max(0L, eclipseReadyAt - gameTime);
+    }
+
+    /** Arms the eclipse: the skill buff is active for {@code durationTicks}, then locked out for {@code cooldownTicks}. */
+    public void activateEclipse(long gameTime, int durationTicks, int cooldownTicks) {
+        this.eclipseActiveUntil = gameTime + durationTicks;
+        this.eclipseReadyAt = gameTime + cooldownTicks;
+    }
+
+    /** Whether this player's own skills should currently read at the buffed eclipse values. */
+    public boolean isEclipseBuffActive(long gameTime) {
+        return gameTime < eclipseActiveUntil;
     }
 }

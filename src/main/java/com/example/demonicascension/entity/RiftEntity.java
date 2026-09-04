@@ -25,6 +25,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 
 import java.util.List;
+import java.util.UUID;
 
 public class RiftEntity extends Entity {
 
@@ -34,6 +35,12 @@ public class RiftEntity extends Entity {
     /** Players can't use the rift for the first few ticks, so it visibly opens. */
     private static final int ARM_DELAY = 20;
 
+    /**
+     * Whose throne room this rift leads to — not necessarily the traveller's own.
+     * Not synced: only {@link #travel} (server-only) ever reads it.
+     */
+    private UUID ownerId;
+
     public RiftEntity(EntityType<? extends RiftEntity> type, Level level) {
         super(type, level);
         this.noPhysics = true;
@@ -42,6 +49,10 @@ public class RiftEntity extends Entity {
     public RiftEntity(Level level, double x, double y, double z) {
         this(ModEntities.RIFT.get(), level);
         this.setPos(x, y, z);
+    }
+
+    public void setOwner(UUID ownerId) {
+        this.ownerId = ownerId;
     }
 
     @Override
@@ -75,17 +86,21 @@ public class RiftEntity extends Entity {
 
         List<Player> nearby = this.level().getEntitiesOfClass(Player.class, mouth);
         for (Player player : nearby) {
-            if (player instanceof ServerPlayer serverPlayer) {
-                travel(serverPlayer);
+            if (player instanceof ServerPlayer serverPlayer && travel(serverPlayer)) {
+                // Single-use: the rift snaps shut behind whoever just stepped through,
+                // rather than staying open for the rest of its LIFETIME.
+                closeEffect();
+                this.discard();
+                return;
             }
         }
     }
 
-    /** Sends the player through — into the abyss, or back out of it. */
-    private void travel(ServerPlayer player) {
+    /** Sends the player through — into the abyss, or back out of it. Returns whether they actually travelled. */
+    private boolean travel(ServerPlayer player) {
         var server = player.getServer();
         if (server == null) {
-            return;
+            return false;
         }
 
         DemonData data = player.getData(ModAttachments.DEMON_DATA);
@@ -97,12 +112,12 @@ public class RiftEntity extends Entity {
                 player.sendSystemMessage(Component
                         .literal("The way back is lost. You must find another road.")
                         .withStyle(ChatFormatting.RED));
-                return;
+                return false;
             }
 
             ResourceLocation dimId = ResourceLocation.tryParse(data.getReturnDimension().orElse(""));
             if (dimId == null) {
-                return;
+                return false;
             }
 
             ServerLevel destination = server.getLevel(
@@ -112,7 +127,7 @@ public class RiftEntity extends Entity {
                 player.sendSystemMessage(Component
                         .literal("The way back has collapsed.")
                         .withStyle(ChatFormatting.RED));
-                return;
+                return false;
             }
 
             player.teleportTo(destination,
@@ -132,7 +147,7 @@ public class RiftEntity extends Entity {
             // --- Going in ---
             ServerLevel abyss = server.getLevel(ModDimensions.ABYSS);
             if (abyss == null) {
-                return;
+                return false;
             }
 
             data.setReturnPoint(
@@ -140,7 +155,10 @@ public class RiftEntity extends Entity {
                     player.getX(), player.getY(), player.getZ());
             player.setData(ModAttachments.DEMON_DATA, data);
 
-            AbyssManager.sendToAbyss(player, abyss);
+            // Leads to whoever opened it, not necessarily the traveller's own hall —
+            // falls back to the traveller's own if somehow unset.
+            UUID destination = this.ownerId != null ? this.ownerId : player.getUUID();
+            AbyssManager.sendToAbyss(player, abyss, destination);
             ModNetworking.syncToAll(player);
 
             player.sendSystemMessage(Component
@@ -148,9 +166,7 @@ public class RiftEntity extends Entity {
                     .withStyle(ChatFormatting.DARK_PURPLE));
         }
 
-        // The rift collapses once someone passes through.
-        closeEffect();
-        this.discard();
+        return true;
     }
 
     /** Sound only — the animated texture carries the visual on its own. */

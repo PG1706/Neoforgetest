@@ -60,13 +60,17 @@ public class AbyssManager {
      * Places the throne room structure at {@code entryPoint} if it isn't already there.
      * Returns where the player should actually stand.
      */
-    public static BlockPos ensureHall(ServerLevel level, BlockPos entryPoint) {
+    public static BlockPos ensureHall(ServerLevel level, BlockPos entryPoint, UUID hallOwner) {
         // The player stands exactly where the structure block itself sat when the hall
         // was scanned.
         BlockPos spawnPoint = entryPoint.offset(SPAWN_OFFSET);
 
-        // If the origin tile is already solid, assume the hall has been placed.
-        if (!level.getBlockState(entryPoint).isAir()) {
+        // Whether the hall has been built has to be tracked explicitly — the entry
+        // tile is where the structure block that scanned this build used to sit, and
+        // the scanned template itself places air there, so it reads as "unplaced"
+        // forever regardless of what's actually been built.
+        AbyssHallState state = AbyssHallState.get(level);
+        if (state.isHallBuilt(hallOwner)) {
             return spawnPoint;
         }
 
@@ -89,6 +93,10 @@ public class AbyssManager {
         level.setBlockAndUpdate(swordPos, Blocks.AIR.defaultBlockState());
         spawnAltarSword(level, swordPos);
 
+        // The altar sword is a one-time gift: mark the hall built so a later visit —
+        // whether or not the sword was ever taken — never spawns another one.
+        state.markHallBuilt(hallOwner);
+
         return spawnPoint;
     }
 
@@ -99,10 +107,10 @@ public class AbyssManager {
         level.addFreshEntity(sword);
     }
 
-    /** Builds the hall if needed and puts the player safely on the nave centreline. */
-    public static void sendToAbyss(ServerPlayer player, ServerLevel abyss) {
-        BlockPos entryPoint = platformCenter(player.getUUID());
-        BlockPos spawnPoint = ensureHall(abyss, entryPoint);
+    /** Builds {@code hallOwner}'s hall if needed and puts {@code player} on its nave centreline. */
+    public static void sendToAbyss(ServerPlayer player, ServerLevel abyss, UUID hallOwner) {
+        BlockPos entryPoint = platformCenter(hallOwner);
+        BlockPos spawnPoint = ensureHall(abyss, entryPoint, hallOwner);
 
         player.teleportTo(abyss,
                 spawnPoint.getX() + 0.5,
@@ -111,5 +119,10 @@ public class AbyssManager {
                 0.0F, 0.0F); // face +Z, looking down the hall
 
         player.resetFallDistance();
+    }
+
+    /** Builds the player's own hall if needed and sends them there. */
+    public static void sendToAbyss(ServerPlayer player, ServerLevel abyss) {
+        sendToAbyss(player, abyss, player.getUUID());
     }
 }

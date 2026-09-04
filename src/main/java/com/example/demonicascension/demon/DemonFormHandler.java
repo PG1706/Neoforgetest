@@ -83,6 +83,11 @@ public class DemonFormHandler {
         removeModifier(player, Attributes.MAX_HEALTH, ASCENDED_HEALTH_ID);
         removeModifier(player, Attributes.MOVEMENT_SPEED, ASCENDED_SPEED_ID);
 
+        // Only the SKILLS' own numbers burn fiercer during the eclipse — the base form
+        // (granted just by transforming, not a skill) is untouched.
+        double buff = data.isEclipseBuffActive(player.level().getGameTime())
+                ? ModConfigs.ECLIPSE_BUFF_MULTIPLIER.get() : 1.0;
+
         // --- Base form ---
         addModifier(player, Attributes.MAX_HEALTH, HEALTH_ID, ModConfigs.BASE_HEALTH_BONUS.get(),
                 AttributeModifier.Operation.ADD_VALUE);
@@ -99,7 +104,7 @@ public class DemonFormHandler {
 
         // --- Infernal Vigor ---
         if (data.hasSkill(DemonSkill.INFERNAL_VIGOR)) {
-            addModifier(player, Attributes.MAX_HEALTH, VIGOR_HEALTH_ID, ModConfigs.VIGOR_HEALTH_BONUS.get(),
+            addModifier(player, Attributes.MAX_HEALTH, VIGOR_HEALTH_ID, ModConfigs.VIGOR_HEALTH_BONUS.get() * buff,
                     AttributeModifier.Operation.ADD_VALUE);
         } else {
             removeModifier(player, Attributes.MAX_HEALTH, VIGOR_HEALTH_ID);
@@ -107,7 +112,7 @@ public class DemonFormHandler {
 
         // --- Rending Claws ---
         if (data.hasSkill(DemonSkill.RENDING_CLAWS)) {
-            addModifier(player, Attributes.ATTACK_DAMAGE, CLAWS_DAMAGE_ID, ModConfigs.CLAWS_DAMAGE_BONUS.get(),
+            addModifier(player, Attributes.ATTACK_DAMAGE, CLAWS_DAMAGE_ID, ModConfigs.CLAWS_DAMAGE_BONUS.get() * buff,
                     AttributeModifier.Operation.ADD_VALUE);
         } else {
             removeModifier(player, Attributes.ATTACK_DAMAGE, CLAWS_DAMAGE_ID);
@@ -115,9 +120,9 @@ public class DemonFormHandler {
 
         // --- Cloven Swiftness ---
         if (data.hasSkill(DemonSkill.CLOVEN_SWIFTNESS)) {
-            addModifier(player, Attributes.MOVEMENT_SPEED, SWIFT_SPEED_ID, ModConfigs.SWIFT_SPEED_BONUS.get(),
+            addModifier(player, Attributes.MOVEMENT_SPEED, SWIFT_SPEED_ID, ModConfigs.SWIFT_SPEED_BONUS.get() * buff,
                     AttributeModifier.Operation.ADD_MULTIPLIED_BASE);
-            addModifier(player, Attributes.ATTACK_SPEED, SWIFT_ATTACK_ID, ModConfigs.SWIFT_ATTACK_SPEED_BONUS.get(),
+            addModifier(player, Attributes.ATTACK_SPEED, SWIFT_ATTACK_ID, ModConfigs.SWIFT_ATTACK_SPEED_BONUS.get() * buff,
                     AttributeModifier.Operation.ADD_MULTIPLIED_BASE);
             addModifier(player, Attributes.SAFE_FALL_DISTANCE, FALL_ID, 1000.0,
                     AttributeModifier.Operation.ADD_VALUE);

@@ -24,7 +24,7 @@ public class RiftRenderer extends EntityRenderer<RiftEntity> {
     private static final int FRAMES = 8;
     private static final int TICKS_PER_FRAME = 2;
 
-    private static final float WIDTH = 1.2F;
+    private static final float WIDTH = 1.6F;
     private static final float HEIGHT = 2.4F;
 
     public RiftRenderer(EntityRendererProvider.Context context) {

@@ -1,6 +1,7 @@
 package com.example.demonicascension.client;
 
 import com.example.demonicascension.DemonicAscension;
+import com.example.demonicascension.item.ModItems;
 import com.example.demonicascension.network.UseAbilityPayload;
 import com.mojang.blaze3d.platform.InputConstants;
 
@@ -11,6 +12,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.lwjgl.glfw.GLFW;
 
@@ -39,6 +41,10 @@ public class ModKeybinds {
             "key." + DemonicAscension.MODID + ".transform",
             InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_B, CATEGORY);
 
+    public static final KeyMapping ECLIPSE_KEY = new KeyMapping(
+            "key." + DemonicAscension.MODID + ".eclipse",
+            InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_N, CATEGORY);
+
     @EventBusSubscriber(modid = DemonicAscension.MODID, value = Dist.CLIENT)
     public static class Registration {
         @SubscribeEvent
@@ -48,6 +54,7 @@ public class ModKeybinds {
             event.register(SKILL_TREE_KEY);
             event.register(RIFT_KEY);
             event.register(TRANSFORM_KEY);
+            event.register(ECLIPSE_KEY);
         }
     }
 
@@ -69,6 +76,10 @@ public class ModKeybinds {
             PacketDistributor.sendToServer(
                     new UseAbilityPayload(UseAbilityPayload.Ability.TRANSFORM.ordinal()));
         }
+        while (ECLIPSE_KEY.consumeClick()) {
+            PacketDistributor.sendToServer(
+                    new UseAbilityPayload(UseAbilityPayload.Ability.ECLIPSE.ordinal()));
+        }
         while (SKILL_TREE_KEY.consumeClick()) {
             Minecraft mc = Minecraft.getInstance();
             // Only open when no other screen is active.
@@ -76,5 +87,22 @@ public class ModKeybinds {
                 mc.setScreen(new SkillTreeScreen());
             }
         }
+    }
+
+    /**
+     * A swing at a mob is caught server-side (see SoulHarvestEvents#onAttackEntity),
+     * but nothing server-visible marks an air swing — so that half of "swing the
+     * sword to fire a slash" has to be detected here instead. The server never
+     * trusts this alone: AbilityHandler#trySwordSlash revalidates the ignite window
+     * and cooldown before anything is spawned.
+     */
+    @SubscribeEvent
+    public static void onEmptyLeftClick(PlayerInteractEvent.LeftClickEmpty event) {
+        if (!event.getEntity().getMainHandItem().is(ModItems.ABYSSAL_SWORD.get())) {
+            return;
+        }
+
+        PacketDistributor.sendToServer(
+                new UseAbilityPayload(UseAbilityPayload.Ability.SWORD_SLASH.ordinal()));
     }
 }

@@ -28,6 +28,8 @@ public record UseAbilityPayload(int abilityIndex) implements CustomPacketPayload
         BOLT,
         DASH,
         RIFT,
-        TRANSFORM
+        TRANSFORM,
+        SWORD_SLASH,
+        ECLIPSE
     }
 }

@@ -34,6 +34,11 @@ public class ModNetworking {
                 UnlockSkillPayload.TYPE,
                 UnlockSkillPayload.STREAM_CODEC,
                 ServerPayloadHandler::handleUnlock);
+
+        registrar.playToClient(
+                EclipseStatePayload.TYPE,
+                EclipseStatePayload.STREAM_CODEC,
+                ClientPayloadHandler::handleEclipse);
     }
 
     private static DemonDataPayload buildPayload(ServerPlayer owner) {
@@ -55,5 +60,15 @@ public class ModNetworking {
     /** Sends one player's data to one specific viewer, used when tracking begins. */
     public static void syncToViewer(ServerPlayer viewer, ServerPlayer owner) {
         PacketDistributor.sendToPlayer(viewer, buildPayload(owner));
+    }
+
+    /** Broadcasts the eclipse's server-wide sky/storm state to everyone connected. */
+    public static void broadcastEclipseState(long activeUntilGameTime) {
+        PacketDistributor.sendToAllPlayers(new EclipseStatePayload(activeUntilGameTime));
+    }
+
+    /** Catches up one player who logged in while the eclipse was already active. */
+    public static void syncEclipseStateToViewer(ServerPlayer viewer, long activeUntilGameTime) {
+        PacketDistributor.sendToPlayer(viewer, new EclipseStatePayload(activeUntilGameTime));
     }
 }

@@ -28,6 +28,11 @@ public class ServerPayloadHandler {
                 case DASH -> AbilityHandler.useDashSlot(player);
                 case RIFT -> AbilityHandler.useRiftSlot(player);
                 case TRANSFORM -> AbilityHandler.useTransformSlot(player);
+                // Not a deliberate keypress like the others — an air swing detected
+                // client-side (see ModKeybinds). Never trust that alone: revalidate
+                // the ignite window and cooldown server-side inside trySwordSlash.
+                case SWORD_SLASH -> AbilityHandler.trySwordSlash(player, player.getLookAngle());
+                case ECLIPSE -> AbilityHandler.useEclipseSlot(player);
             }
         });
     }

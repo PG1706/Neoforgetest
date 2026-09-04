@@ -22,7 +22,9 @@ import net.minecraft.world.level.Level;
 /**
  * The Abyssal Sword: right-click arms a temporary ignite window (see
  * {@link com.example.demonicascension.event.SoulHarvestEvents#onSwordHit} for the
- * on-hit effect this enables).
+ * on-hit effect this enables). Its custom 3D in-hand renderer is registered
+ * separately, client-side only — see
+ * {@code client/ClientRenderEvents#registerClientExtensions}.
  */
 public class AbyssalSwordItem extends SwordItem {
 

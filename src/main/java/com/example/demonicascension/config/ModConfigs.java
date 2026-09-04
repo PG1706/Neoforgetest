@@ -77,6 +77,12 @@ public class ModConfigs {
     // --- Abyssal Rift ---
     public static final ModConfigSpec.IntValue RIFT_COOLDOWN_TICKS;
 
+    // --- Abyssal Eclipse (the other ultimate) ---
+    public static final ModConfigSpec.IntValue ECLIPSE_DURATION_TICKS;
+    public static final ModConfigSpec.IntValue ECLIPSE_COOLDOWN_TICKS;
+    public static final ModConfigSpec.DoubleValue ECLIPSE_BUFF_MULTIPLIER;
+    public static final ModConfigSpec.IntValue ECLIPSE_LIGHTNING_INTERVAL_TICKS;
+
     // --- Abyssal Soul rejection (used by a second player on a claimed world) ---
     public static final ModConfigSpec.DoubleValue REJECTION_DAMAGE;
     public static final ModConfigSpec.IntValue REJECTION_BURN_TICKS;
@@ -91,6 +97,9 @@ public class ModConfigs {
     public static final ModConfigSpec.DoubleValue SWORD_UNASCENDED_DAMAGE;
     public static final ModConfigSpec.IntValue SWORD_UNASCENDED_FIRE_TICKS;
     public static final ModConfigSpec.IntValue SWORD_UNASCENDED_CHECK_INTERVAL_TICKS;
+    public static final ModConfigSpec.DoubleValue SWORD_SLASH_DAMAGE;
+    public static final ModConfigSpec.IntValue SWORD_SLASH_FIRE_TICKS;
+    public static final ModConfigSpec.IntValue SWORD_SLASH_COOLDOWN_TICKS;
 
     // --- Abyss dimension ---
     public static final ModConfigSpec.IntValue PLATFORM_SPACING;
@@ -224,7 +233,24 @@ public class ModConfigs {
 
         builder.push("abilities").push("abyssalRift");
         RIFT_COOLDOWN_TICKS = builder.comment("Cooldown in ticks before the rift slot can be used again.")
-                .defineInRange("cooldownTicks", 600, 0, Integer.MAX_VALUE);
+                .defineInRange("cooldownTicks", 100, 0, Integer.MAX_VALUE);
+        builder.pop(2);
+
+        builder.push("abilities").push("abyssalEclipse");
+        ECLIPSE_DURATION_TICKS = builder.comment(
+                "How long the eclipse lasts once triggered, in ticks. Drives the darkened sky, the",
+                "server-wide storm, and the skill buff below, all together.")
+                .defineInRange("durationTicks", 600, 1, Integer.MAX_VALUE);
+        ECLIPSE_COOLDOWN_TICKS = builder.comment("Cooldown in ticks before the eclipse can be triggered again.")
+                .defineInRange("cooldownTicks", 2400, 0, Integer.MAX_VALUE);
+        ECLIPSE_BUFF_MULTIPLIER = builder.comment(
+                "Multiplier applied to every unlocked skill's numbers while the eclipse is active",
+                "(1.5 = 50% stronger).")
+                .defineInRange("buffMultiplier", 1.5, 1.0, 10.0);
+        ECLIPSE_LIGHTNING_INTERVAL_TICKS = builder.comment(
+                "How often, in ticks, a cosmetic lightning strike lands near a random online player",
+                "in the overworld while the eclipse is active.")
+                .defineInRange("lightningIntervalTicks", 60, 1, Integer.MAX_VALUE);
         builder.pop(2);
 
         builder.push("abyssalSoul");
@@ -258,6 +284,15 @@ public class ModConfigs {
                 .defineInRange("unascendedFireTicks", 40, 1, Integer.MAX_VALUE);
         SWORD_UNASCENDED_CHECK_INTERVAL_TICKS = builder.comment("How often (in ticks) the sword checks whether its non-ascended holder should be punished.")
                 .defineInRange("unascendedCheckIntervalTicks", 20, 1, Integer.MAX_VALUE);
+        SWORD_SLASH_DAMAGE = builder.comment(
+                "Damage dealt by the fire slash thrown out on every swing while the ignite ability is active.")
+                .defineInRange("slashDamage", 10.0, 0.0, 10000.0);
+        SWORD_SLASH_FIRE_TICKS = builder.comment("How long a target struck by a fire slash burns for, in ticks.")
+                .defineInRange("slashFireTicks", 100, 1, Integer.MAX_VALUE);
+        SWORD_SLASH_COOLDOWN_TICKS = builder.comment(
+                "Minimum ticks between fire slashes, independent of the ignite ability's own cooldown —",
+                "just enough to stop a single swing (or a click macro) from throwing more than one.")
+                .defineInRange("slashCooldownTicks", 10, 0, Integer.MAX_VALUE);
         builder.pop();
 
         builder.push("abyssDimension");

@@ -1,12 +1,16 @@
 package com.example.demonicascension.demon;
 
 import com.example.demonicascension.config.ModConfigs;
+import com.example.demonicascension.entity.FireSlashEntity;
 import com.example.demonicascension.entity.RiftEntity;
 import com.example.demonicascension.entity.SoulBoltEntity;
+import com.example.demonicascension.event.EclipseHandler;
+import com.example.demonicascension.item.ModItems;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -16,6 +20,7 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
@@ -30,6 +35,17 @@ public class AbilityHandler {
 
     // --- Bolt tuning (not config-exposed; a fixed part of the ability's feel) ---
     private static final double BOLT_SPEED = 1.6;
+
+    // --- Fire slash tuning (not config-exposed; a fixed part of the ability's feel) ---
+    private static final double SLASH_SPEED = 1.4;
+
+    /** 1.0 normally; the configured eclipse multiplier while that ultimate's buff window is open. */
+    private static float eclipseMultiplier(ServerPlayer player) {
+        DemonData data = player.getData(ModAttachments.DEMON_DATA);
+        return data.isEclipseBuffActive(player.level().getGameTime())
+                ? ModConfigs.ECLIPSE_BUFF_MULTIPLIER.get().floatValue()
+                : 1.0F;
+    }
 
     /** How long the light-source entity lingers, in ticks. */
     private static final int LIGHT_LIFETIME = 30; // 1.5 seconds
@@ -124,7 +140,7 @@ public class AbilityHandler {
         List<LivingEntity> hits = player.level().getEntitiesOfClass(
                 LivingEntity.class, sweep, e -> e != player && e.isAlive());
 
-        float dashDamage = ModConfigs.DASH_DAMAGE.get().floatValue();
+        float dashDamage = ModConfigs.DASH_DAMAGE.get().floatValue() * eclipseMultiplier(player);
         for (LivingEntity target : hits) {
             target.hurt(player.damageSources().playerAttack(player), dashDamage);
             Vec3 push = target.position().subtract(start).normalize().scale(1.8);
@@ -189,7 +205,7 @@ public class AbilityHandler {
         List<LivingEntity> hits = player.level().getEntitiesOfClass(
                 LivingEntity.class, area, e -> e != player && e.isAlive());
 
-        float voidstepDamage = ModConfigs.VOIDSTEP_DAMAGE.get().floatValue();
+        float voidstepDamage = ModConfigs.VOIDSTEP_DAMAGE.get().floatValue() * eclipseMultiplier(player);
         for (LivingEntity target : hits) {
             target.hurt(player.damageSources().magic(), voidstepDamage);
         }
@@ -288,7 +304,7 @@ public class AbilityHandler {
         Vec3 look = player.getLookAngle();
 
         SoulBoltEntity bolt = new SoulBoltEntity(player.level(), player);
-        bolt.setDamage(ModConfigs.BOLT_DAMAGE.get().floatValue());
+        bolt.setDamage(ModConfigs.BOLT_DAMAGE.get().floatValue() * eclipseMultiplier(player));
 
         Vec3 velocity = look.scale(BOLT_SPEED);
         if (spread > 0.0) {
@@ -309,7 +325,7 @@ public class AbilityHandler {
     private static void fireBarrage(ServerPlayer player) {
         Vec3 look = player.getLookAngle();
         var rng = player.getRandom();
-        float barrageDamage = ModConfigs.BARRAGE_BOLT_DAMAGE.get().floatValue();
+        float barrageDamage = ModConfigs.BARRAGE_BOLT_DAMAGE.get().floatValue() * eclipseMultiplier(player);
 
         for (int i = 0; i < ModConfigs.BARRAGE_BOLT_COUNT.get(); i++) {
             SoulBoltEntity bolt = new SoulBoltEntity(player.level(), player);
@@ -358,6 +374,7 @@ public class AbilityHandler {
 
         RiftEntity rift = new RiftEntity(player.level(), spot.x, spot.y, spot.z);
         rift.setYRot(player.getYRot());
+        rift.setOwner(player.getUUID());
         player.level().addFreshEntity(rift);
 
         data.setRiftCooldown(now, ModConfigs.RIFT_COOLDOWN_TICKS.get());
@@ -369,5 +386,77 @@ public class AbilityHandler {
             level.playSound(null, player.blockPosition(),
                     SoundEvents.WITHER_SPAWN, SoundSource.PLAYERS, 0.8F, 0.4F);
         }
+    }
+
+    // ==================== ECLIPSE SLOT ====================
+
+    public static void useEclipseSlot(ServerPlayer player) {
+        DemonData data = player.getData(ModAttachments.DEMON_DATA);
+
+        if (!data.isTransformed()) {
+            denyNotTransformed(player);
+            return;
+        }
+
+        if (!data.hasSkill(DemonSkill.ABYSSAL_ECLIPSE)) {
+            deny(player, "The abyss does not yet answer to you.");
+            return;
+        }
+
+        long now = player.level().getGameTime();
+        if (!data.isEclipseReady(now)) {
+            denyCooldown(player, "Abyssal Eclipse", data.getEclipseRemaining(now));
+            return;
+        }
+
+        MinecraftServer server = player.getServer();
+        ServerLevel overworld = server != null ? server.getLevel(Level.OVERWORLD) : null;
+        if (overworld == null) {
+            return;
+        }
+
+        int durationTicks = ModConfigs.ECLIPSE_DURATION_TICKS.get();
+        data.activateEclipse(now, durationTicks, ModConfigs.ECLIPSE_COOLDOWN_TICKS.get());
+        player.setData(ModAttachments.DEMON_DATA, data);
+
+        EclipseHandler.activate(player, overworld, durationTicks);
+
+        player.sendSystemMessage(Component
+                .literal("You call out, and the abyss answers — the sky itself blackens.")
+                .withStyle(ChatFormatting.DARK_PURPLE));
+    }
+
+    // ==================== SWORD FIRE SLASH ====================
+
+    /**
+     * Called on every sword swing (both an air swing and a swing that connects — see
+     * {@link com.example.demonicascension.network.ServerPayloadHandler#handleAbility}
+     * and {@link com.example.demonicascension.event.SoulHarvestEvents#onAttackEntity}).
+     * Silently does nothing outside the ignite window or its own short cooldown — this
+     * isn't a deliberate keypress, so there's no denial feedback to show.
+     */
+    public static void trySwordSlash(ServerPlayer player, Vec3 direction) {
+        if (!player.getMainHandItem().is(ModItems.ABYSSAL_SWORD.get())) {
+            return;
+        }
+
+        DemonData data = player.getData(ModAttachments.DEMON_DATA);
+        long now = player.level().getGameTime();
+
+        if (!data.isSwordIgniteActive(now) || !data.isSlashReady(now)) {
+            return;
+        }
+
+        data.setSlashCooldown(now, ModConfigs.SWORD_SLASH_COOLDOWN_TICKS.get());
+        player.setData(ModAttachments.DEMON_DATA, data);
+
+        FireSlashEntity slash = new FireSlashEntity(player.level(), player);
+        slash.setDamage(ModConfigs.SWORD_SLASH_DAMAGE.get().floatValue());
+        slash.setDeltaMovement(direction.normalize().scale(SLASH_SPEED));
+
+        player.level().addFreshEntity(slash);
+
+        player.level().playSound(null, player.blockPosition(),
+                SoundEvents.FIRECHARGE_USE, SoundSource.PLAYERS, 0.7F, 1.6F);
     }
 }

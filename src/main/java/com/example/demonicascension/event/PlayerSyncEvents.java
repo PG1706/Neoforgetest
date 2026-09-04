@@ -17,6 +17,10 @@ public class PlayerSyncEvents {
         if (event.getEntity() instanceof ServerPlayer player) {
             DemonFormHandler.updateForm(player);
             ModNetworking.syncToAll(player);
+
+            if (EclipseHandler.isActive(player.level().getGameTime())) {
+                ModNetworking.syncEclipseStateToViewer(player, EclipseHandler.getActiveUntilGameTime());
+            }
         }
     }
 

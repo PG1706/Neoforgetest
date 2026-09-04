@@ -2,6 +2,7 @@ package com.example.demonicascension.event;
 
 import com.example.demonicascension.DemonicAscension;
 import com.example.demonicascension.config.ModConfigs;
+import com.example.demonicascension.demon.AbilityHandler;
 import com.example.demonicascension.demon.DemonData;
 import com.example.demonicascension.demon.DemonSkill;
 import com.example.demonicascension.demon.ModAttachments;
@@ -18,11 +19,13 @@ import net.minecraft.world.entity.boss.enderdragon.EnderDragon;
 import net.minecraft.world.entity.boss.wither.WitherBoss;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
+import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
 @EventBusSubscriber(modid = DemonicAscension.MODID)
@@ -83,7 +86,12 @@ public class SoulHarvestEvents {
             return;
         }
 
-        event.setAmount(event.getAmount() * (1.0f - ModConfigs.VIGOR_DAMAGE_REDUCTION.get().floatValue()));
+        float reduction = ModConfigs.VIGOR_DAMAGE_REDUCTION.get().floatValue();
+        if (data.isEclipseBuffActive(defender.level().getGameTime())) {
+            reduction = Math.min(0.95f, reduction * ModConfigs.ECLIPSE_BUFF_MULTIPLIER.get().floatValue());
+        }
+
+        event.setAmount(event.getAmount() * (1.0f - reduction));
     }
 
     /** Rending Claws: ignite the target and drain life. */
@@ -100,7 +108,12 @@ public class SoulHarvestEvents {
 
         event.getEntity().setRemainingFireTicks(100); // 5 seconds
 
-        float healed = event.getNewDamage() * ModConfigs.CLAWS_LIFESTEAL.get().floatValue();
+        float lifesteal = ModConfigs.CLAWS_LIFESTEAL.get().floatValue();
+        if (data.isEclipseBuffActive(attacker.level().getGameTime())) {
+            lifesteal *= ModConfigs.ECLIPSE_BUFF_MULTIPLIER.get().floatValue();
+        }
+
+        float healed = event.getNewDamage() * lifesteal;
         if (healed > 0.0f) {
             attacker.heal(healed);
         }
@@ -132,6 +145,30 @@ public class SoulHarvestEvents {
         if (healed > 0.0f) {
             attacker.heal(healed);
         }
+    }
+
+    /**
+     * A swing that connects also counts as "swinging the sword" for the fire slash —
+     * this fires before the hit itself is resolved, so it's a clean per-swing hook. Air
+     * swings are handled separately, client-side, since nothing server-visible marks
+     * those (see {@link com.example.demonicascension.network.ServerPayloadHandler}).
+     */
+    @SubscribeEvent
+    public static void onAttackEntity(AttackEntityEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer attacker)) {
+            return;
+        }
+
+        if (!attacker.getMainHandItem().is(ModItems.ABYSSAL_SWORD.get())) {
+            return;
+        }
+
+        Vec3 direction = event.getTarget().getEyePosition().subtract(attacker.getEyePosition());
+        if (direction.lengthSqr() < 1.0E-6) {
+            direction = attacker.getLookAngle();
+        }
+
+        AbilityHandler.trySwordSlash(attacker, direction);
     }
 
     /** The Abyssal Sword refuses anyone who hasn't ascended: it burns and hurts them while held. */

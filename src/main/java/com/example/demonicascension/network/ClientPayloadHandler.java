@@ -38,4 +38,9 @@ public class ClientPayloadHandler {
             player.setData(ModAttachments.DEMON_DATA, data);
         });
     }
+
+    public static void handleEclipse(final EclipseStatePayload payload, final IPayloadContext context) {
+        context.enqueueWork(() ->
+                com.example.demonicascension.client.EclipseClientState.setActiveUntil(payload.activeUntilGameTime()));
+    }
 }

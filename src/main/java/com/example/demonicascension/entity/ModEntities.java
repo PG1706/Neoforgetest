@@ -26,11 +26,19 @@ public class ModEntities {
     public static final Supplier<EntityType<RiftEntity>> RIFT =
             ENTITIES.register("rift", () -> EntityType.Builder
                     .<RiftEntity>of(RiftEntity::new, MobCategory.MISC)
-                    .sized(1.2F, 2.4F)
+                    .sized(1.6F, 2.4F)
                     .clientTrackingRange(16)
                     .updateInterval(2)
                     .fireImmune()
                     .build("rift"));
+
+    public static final Supplier<EntityType<FireSlashEntity>> FIRE_SLASH =
+            ENTITIES.register("fire_slash", () -> EntityType.Builder
+                    .<FireSlashEntity>of(FireSlashEntity::new, MobCategory.MISC)
+                    .sized(0.5F, 0.3F)
+                    .clientTrackingRange(8)
+                    .updateInterval(1)
+                    .build("fire_slash"));
 
     public static final Supplier<EntityType<AltarSwordEntity>> ALTAR_SWORD =
             ENTITIES.register("altar_sword", () -> EntityType.Builder

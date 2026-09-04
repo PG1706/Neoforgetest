@@ -43,11 +43,19 @@ public enum DemonSkill {
             "Do not cross the distance. Refuse it. The abyss collapses "
                     + "where you left and where you arrive.", 3, 2, 2, ABYSSAL_DASH),
 
-    // --- The ultimate. Stands apart from the tree; demands everything else first. ---
+    // --- The ultimates. Stand apart from the tree; each demands everything else first. ---
     ABYSSAL_RIFT("abyssal_rift", "Abyssal Rift",
             "You have taken enough of the abyss into yourself that it answers. "
                     + "Tear open the world and step through into a place that is yours alone.",
             5, 4, 1,
+            INFERNAL_VIGOR, RENDING_CLAWS, CLOVEN_SWIFTNESS, VOID_SIGHT,
+            SOUL_BOLT, ABYSSAL_DASH, HELLFIRE_BARRAGE, VOIDSTEP),
+
+    ABYSSAL_ECLIPSE("abyssal_eclipse", "Abyssal Eclipse",
+            "Call out to the darkness beyond the world. The sky blackens beneath a soulfire "
+                    + "eclipse, storms wrack the land, and for a time every power you hold "
+                    + "burns fiercer.",
+            5, 4, 2,
             INFERNAL_VIGOR, RENDING_CLAWS, CLOVEN_SWIFTNESS, VOID_SIGHT,
             SOUL_BOLT, ABYSSAL_DASH, HELLFIRE_BARRAGE, VOIDSTEP);
 
@@ -104,9 +112,9 @@ public enum DemonSkill {
         return prerequisites;
     }
 
-    /** The ultimate is drawn separately in the GUI, without prerequisite lines. */
+    /** Ultimates are drawn separately in the GUI, without prerequisite lines. */
     public boolean isUltimate() {
-        return this == ABYSSAL_RIFT;
+        return this == ABYSSAL_RIFT || this == ABYSSAL_ECLIPSE;
     }
 
     public boolean prerequisitesMet(DemonData data) {
